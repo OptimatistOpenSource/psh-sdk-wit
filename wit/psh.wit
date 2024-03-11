@@ -4,6 +4,6 @@ world bindings {
     import name: func() -> string;
     import op:system/version@0.0.0;
     import op:perf/counter@0.0.0;
-    import memory;
+    import op:memory/info@0.0.0;
     import cpu;
 }

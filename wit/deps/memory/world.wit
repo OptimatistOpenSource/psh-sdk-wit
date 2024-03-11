@@ -1,4 +1,6 @@
-interface memory {
+package op:memory@0.0.0;
+
+interface info {
     record memory-info {
         mem-total: u64,
         mem-free: u64,
@@ -56,4 +58,8 @@ interface memory {
     }
 
     get-memory-info: func() -> result<memory-info, string>;
+}
+
+world imports {
+    import info;
 }
