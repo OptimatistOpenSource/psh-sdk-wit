@@ -1,8 +1,9 @@
+#[allow(clippy::all)]
+#[allow(dead_code)]
 mod bindings;
-use bindings::*;
 
-extern crate alloc;
+use bindings::op;
 
 fn main() {
-    println!("{}", psh::profiling::system::os_version().unwrap()); 
+    println!("{}", op::system::version::os_version().unwrap());
 }

@@ -1,4 +1,5 @@
 #![cfg(target_arch = "wasm32")]
 
-#[deny(clippy::all)]
-pub(crate) mod bindings;
+#[allow(clippy::all)]
+#[allow(dead_code)]
+pub mod bindings;
