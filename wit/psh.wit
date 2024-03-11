@@ -2,7 +2,7 @@ package psh:profiling;
 
 world bindings {
     import name: func() -> string;
-    import system;
+    import op:system/version@0.0.0;
     import perf;
     import memory;
     import cpu;
