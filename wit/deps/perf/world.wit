@@ -1,4 +1,6 @@
-interface perf {
+package op:perf@0.0.0;
+
+interface counter {
     record counter-stat {
         value: u64
     }
@@ -23,4 +25,8 @@ interface perf {
         ret-area-ptr: u32,
         counter-rid: u32
     ) -> result<counter-stat, string>;
+}
+
+world imports {
+    import counter;
 }
