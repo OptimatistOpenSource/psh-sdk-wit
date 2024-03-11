@@ -10,8 +10,4 @@ build = "build.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-wit-bindgen = "0.16.0"
-wit-bindgen-rust = "0.16.0"
-wee_alloc = "0.4.5"
-
-
+wit-bindgen = "0.21.0"
