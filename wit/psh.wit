@@ -6,4 +6,5 @@ world bindings {
     include profiling:perf/imports@0.0.0;
     import memory;
     import cpu;
+    import interrupts;
 }
