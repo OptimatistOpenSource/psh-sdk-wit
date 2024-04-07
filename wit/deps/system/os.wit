@@ -68,11 +68,18 @@ interface os {
     }
 
     record disk-usage {
+        // read/write bytes between refreshes
         written-bytes: u64,
         read-bytes: u64,
+        // read/write bytes since process start
+        total-written-bytes: u64,
+        total-read-bytes: u64,
     }
 
     get-distro-version: func() -> result<distro-version, string>;
     get-kernel-version: func() -> result<kernel-version, string>;
+
+    // get processes information, you can call this function periodically
+    // to refresh real-time processes information on system
     get-processes: func() -> result<list<process>, string>;
 }
