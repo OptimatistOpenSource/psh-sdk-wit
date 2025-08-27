@@ -1,0 +1,338 @@
+package profiling:perf@0.0.0;
+
+interface sampler {
+    use config.{sampling-config, process, cpu};
+
+    resource sampler {
+        new          : static func(process: process, cpu: cpu, cfg: sampling-config) -> result<sampler, string>;
+        enable       : func() -> result<_, string>;
+        disable      : func() -> result<_, string>;
+        reset        : func() -> result<_, string>;
+        pause        : func() -> result<_, string>;
+        resume       : func() -> result<_, string>;
+        refresh      : func(refresh: s32) -> result<_, string>;
+        update-period: func(new: u64) -> result<_, string>;
+        next-record  : func() -> result<option<%record>, string>;
+        event-id     : func() -> result<u64, string>;
+        stat         : func() -> result<sampler-stat, string>;
+        get-raw-fd   : func() -> s32;
+    }
+
+    record sampler-stat {
+        event-id    : u64,
+        event-count : u64,
+        event-lost  : u64,
+        time-enabled: u64,
+        time-running: u64,
+    }
+
+    record %record {
+        misc: u16,
+        body: record-body,
+    }
+
+    variant weight {
+        full(u64),
+        vars(weight-vars),
+    }
+
+    record weight-vars {
+        var1-dw: u32,
+        var2-w: u16,
+        var3-w: u16,
+    }
+
+    record abi-and-regs {
+        abi: abi,
+        regs: list<u64>,
+    }
+
+    enum abi {
+        abi-none,
+        abi32,
+        abi64,
+    }
+
+    record data-src {
+        mem-op: mem-op,
+        mem-lvl: mem-lvl,
+        mem-snoop: mem-snoop,
+        mem-lock: mem-lock,
+        mem-dtlb: mem-dtlb,
+    }
+
+    enum mem-op {
+        na,
+        load,
+        store,
+        pfetch,
+        exec,
+    }
+
+    enum mem-lvl {
+        na,
+        hit,
+        miss,
+        l1,
+        lfb,
+        l2,
+        l3,
+        loc-ram,
+        rem-ram1,
+        rem-ram2,
+        rem-cce1,
+        rem-cce2,
+        io,
+        unc,
+    }
+
+    enum mem-snoop {
+        na,
+        none,
+        hit,
+        miss,
+        hitm,
+    }
+
+    enum mem-lock {
+        na,
+        locked,
+    }
+
+    enum mem-dtlb {
+        na,
+        hit,
+        miss,
+        l1,
+        l2,
+        wk,
+        os,
+    }
+
+    variant record-body {
+        mmap(mmap-body),
+        lost(lost-body),
+        comm(comm-body),
+        exit(exit-body),
+        throttle(throttle-body),
+        unthrottle(unthrottle-body),
+        fork(fork-body),
+        read(read-body),
+        sample(sample-body),
+        mmap2(mmap2-body),
+        aux(aux-body),
+        itrace-start(intrace-start-body),
+        lost-samples(lost-samples-body),
+        switch(switch-body),
+        switch-cpu-wide(switch-cpu-wide-body),
+        namespaces(namespaces-body),
+        ksymbol(ksymbol-body),
+        bpf-event(bpf-event-body),
+        cgroup(cgroup-body),
+        text-poke(text-poke-body),
+        aux-output-hw-id(aux-output-hw-id-body), // TODO
+    }
+
+    record aux-output-hw-id-body {
+
+    }
+
+    record sample-id {
+        pid: option<u32>,
+        tid: option<u32>,
+        time: option<u64>,
+        id1: option<u64>,
+        stream-id: option<u64>,
+        cpu: option<u32>,
+        id2: option<u64>,
+    }
+
+    record sampler-group-stat {
+        time-enabled: u64,
+        time-running: u64,
+        /// Map of `event_id` -> [`MemberCount`]
+        member-counts: list<tuple<u64, member-count>>,
+    }
+
+    record member-count {
+        event-count: u64,
+        event-lost: u64,
+    }
+
+    record mmap-body {
+        pid: u32,
+        tid: u32,
+        addr: u64,
+        len: u64,
+        pgoff: u64,
+        filename: string,
+    }
+
+    record lost-body {
+        id: u64,
+        lost: u64,
+        sample-id: option<sample-id>,
+    }
+
+    record comm-body {
+        pid: u32,
+        tid: u32,
+        comm: string,
+        sample-id: option<sample-id>,
+    }
+
+    record exit-body {
+        pid: u32,
+        ppid: u32,
+        tid: u32,
+        ptid: u32,
+        time: u64,
+        sample-id: option<sample-id>,
+    }
+
+    record throttle-body {
+        time: u64,
+        id: u64,
+        stream-id: u64,
+        sample-id: option<sample-id>,
+    }
+
+    type unthrottle-body = throttle-body;
+
+    record fork-body {
+        pid: u32,
+        ppid: u32,
+        tid: u32,
+        ptid: u32,
+        time: u64,
+        sample-id: option<sample-id>,
+    }
+
+    record read-body {
+        pid: u32,
+        tid: u32,
+        values: sampler-group-stat,
+        sample-id: option<sample-id>,
+    }
+
+    record sample-body {
+        sample-id: option<u64>,
+        ip: option<u64>,
+        pid: option<u32>,
+        tid: option<u32>,
+        time: option<u64>,
+        addr: option<u64>,
+        id: option<u64>,
+        stream-id: option<u64>,
+        cpu: option<u32>,
+        period: option<u64>,
+        v: option<sampler-group-stat>,
+        ips: option<list<u64>>,
+        data-raw: option<list<u8>>,
+        abi-and-regs-user: option<abi-and-regs>,
+        data-stack-user: option<list<u8>>,
+        weight: option<weight>,
+        data-src: option<data-src>,
+        transaction: option<u64>,
+        abi-and-regs-intr: option<abi-and-regs>,
+        phys-addr: option<u64>,
+        cgroup: option<u64>,
+        data-page-size: option<u64>,
+        code-page-size: option<u64>,
+    }
+
+    variant anon-enum {
+        normal(anon-normal),
+        build-id(list<u8>),
+    }
+
+    record anon-normal {
+        maj: u32,
+        min: u32,
+        ino: u64,
+        ino-generation: u64,
+    }
+
+    record mmap2-body {
+        pid: u32,
+        tid: u32,
+        addr: u64,
+        len: u64,
+        pgoff: u64,
+        anon-enum: anon-enum,
+        prot: u32,
+        %flags: u32,
+        filename: string,
+        sample-id: option<sample-id>,
+    }
+
+    record aux-body {
+        aux-offset: u64,
+        aux-size: u64,
+        %flags: u64,
+        sample-id: option<sample-id>,
+    }
+
+    record intrace-start-body {
+        pid: u32,
+        tid: u32,
+    }
+
+    record lost-samples-body {
+        lost: u64,
+        sample-id: option<sample-id>,
+    }
+
+    record switch-body {
+        sample-id: option<sample-id>,
+    }
+
+    record switch-cpu-wide-body {
+        next-prev-pid: u32,
+        next-prev-tid: u32,
+        sample-id: option<sample-id>,
+    }
+
+    record namespace {
+        dev: u64,
+        inode: u64,
+    }
+
+    record namespaces-body {
+        pid: u32,
+        tid: u32,
+        namespaces: list<namespace>,
+        sample-id: option<sample-id>,
+    }
+
+    record ksymbol-body {
+        addr: u64,
+        len: u32,
+        ksym-type: u16,
+        %flags: u16,
+        name: string,
+        sample-id: option<sample-id>,
+    }
+
+    record bpf-event-body {
+        %type: u16,
+        %flags: u16,
+        id: u32,
+        tag: list<u8>,
+        sample-id: option<sample-id>,
+    }
+
+    record cgroup-body {
+        id: u64,
+        path: string,
+        sample-id: option<sample-id>,
+    }
+
+    record text-poke-body {
+        addr: u64,
+        old-len: u16,
+        new-len: u16,
+        bytes: list<u8>,
+        sample-id: option<sample-id>,
+    }
+}
