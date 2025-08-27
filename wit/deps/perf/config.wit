@@ -124,6 +124,121 @@ interface config {
         guest,
     }
 
+    variant overflow-by {
+        period(u64),
+        freq(u64),
+    }
+
+    enum clock-id {
+        monotonic,
+        monotonic-raw,
+        real-time,
+        boot-time,
+        tai,
+    }
+
+    enum sample-ip-skid {
+        /// SAMPLE_IP can have arbitrary skid
+        arbitrary, // 0
+        /// SAMPLE_IP must have constant skid.
+        constant, // 1
+        /// SAMPLE_IP requested to have 0 skid.
+        try-zero, // 2
+        /// SAMPLE_IP must have 0 skid.  See also the
+        /// description of PERF_RECORD_MISC_EXACT_IP.
+        zero, // 3
+    }
+
+    variant wakeup {
+        events(u32),
+        watermark(u32),
+    }
+
+    enum weight-repr {
+        full,
+        vars,
+    }
+
+    record sample-record-fields {
+        sample-id: bool, // PERF_SAMPLE_IDENTIFIER
+        ip: bool,          // PERF_SAMPLE_IP
+        pid-and-tid: bool, // PERF_SAMPLE_TID
+        time: bool,        // PERF_SAMPLE_TIME
+        addr: bool,        // PERF_SAMPLE_ADDR
+        id: bool,          // PERF_SAMPLE_ID
+        stream-id: bool,   // PERF_SAMPLE_STREAM_ID
+        cpu: bool,         // PERF_SAMPLE_CPU
+        period: bool,      // PERF_SAMPLE_PERIOD
+        v: bool,           // PERF_SAMPLE_READ
+
+        /// Wrap `sample_max_stack` with `Some` to enable this field
+        ips: option<u16>, // PERF_SAMPLE_CALLCHAIN
+
+        data-raw: bool, // PERF_SAMPLE_RAW
+
+        /// Wrap `sample_regs_user` with `Some` to enable this field
+        abi-and-regs-user: option<u64>, // PERF_SAMPLE_REGS_USER
+
+        /// Wrap `sample_stack_user` with `Some` to enable this field,
+        /// `sample_stack_user` must be `n * 8` in value
+        data-stack-user: option<u16>, // PERF_SAMPLE_STACK_USER
+
+        /// Some(WeightRepr::Full) for Weight::Full(u64)\
+        /// Some(WeightRepr::Vars) for Weight::Vars { ... }
+        // PERF_SAMPLE_WEIGHT when WeightRepr::Full
+        // PERF_SAMPLE_WEIGHT_STRUCT when WeightRepr::Vars
+        weight: option<weight-repr>,
+
+        data-src: bool, // PERF_SAMPLE_DATA_SRC
+        transaction: bool, // PERF_SAMPLE_TRANSACTION
+
+        /// Wrap `sample_regs_intr` with `Some` to enable this field
+        abi-and-regs-intr: option<u64>, // PERF_SAMPLE_REGS_INTR
+
+        // The `PERF_RECORD_KSYMBOL` was first added to the Linux kernel in 4.14
+        // the man documentation incorrectly says "since Linux 4.13"
+        // See: https://github.com/torvalds/linux/commit/fc7ce9c74c3ad232b084d80148654f926d01ece7
+        phys-addr: bool, // PERF_SAMPLE_PHYS_ADDR
+        cgroup: bool, // PERF_SAMPLE_CGROUP
+        data-page-size: bool, // PERF_SAMPLE_DATA_PAGE_SIZE
+        code-page-size: bool, // PERF_SAMPLE_CODE_PAGE_SIZE
+    }
+
+    enum extra-record {
+        mmap,
+
+        // `PERF_RECORD_MMAP2` was first added to the Linux kernel in 3.12
+        // the man documentation incorrectly says "since Linux 3.16"
+        // See: https://github.com/torvalds/linux/commit/13d7a2410fa637f450a29ecb515ac318ee40c741
+        mmap2,
+
+        context-switch,
+
+        // `PERF_RECORD_NAMESPACES` was first added to the Linux kernel in 4.12
+        // the man documentation incorrectly says "since Linux 4.11"
+        // See: https://github.com/torvalds/linux/commit/e422267322cd319e2695a535e47c5b1feeac45eb
+        namespaces,
+
+        // `PERF_RECORD_KSYMBOL` was first added to the Linux kernel in 5.1
+        // the man documentation incorrectly says "since Linux 5.0"
+        // See: https://github.com/torvalds/linux/commit/76193a94522f1d4edf2447a536f3f796ce56343b
+        ksymbol,
+
+        // `PERF_RECORD_BPF_EVENT` was first added to the Linux kernel in 5.1
+        // the man documentation incorrectly says "since Linux 5.0"
+        // See: https://github.com/torvalds/linux/commit/6ee52e2a3fe4ea35520720736e6791df1fb67106
+        bpf-event,
+
+        cgroup,
+
+        // `PERF_RECORD_TEXT_POKE` was first added to the Linux kernel in 5.9
+        // the man documentation incorrectly says "since Linux 5.8"
+        // See: https://github.com/torvalds/linux/commit/e17d43b93e544f5016c0251d2074c15568d5d963
+        text-poke,
+
+        fork-and-exit,
+    }
+
     record extra-config {
         pinned   : bool,
         exclusive: bool,
@@ -140,6 +255,49 @@ interface config {
         event       : event,
         scopes      : list<event-scope>,
         extra-config: extra-config,
+    }
+
+    record sampling-config {
+        event       : event,
+        scopes      : list<event-scope>,
+        overflow-by : overflow-by,
+        extra-config: sampling-extra-config,
+    }
+
+    record sampling-extra-config {
+        pinned: bool,
+        exclusive: bool,
+        mmap-data: bool,
+
+        comm: bool,
+        comm-exec: bool,
+
+        /// TODO: `inherit` can't be turned on when `sample_record_fields.v` is enabled
+        inherit: bool,
+        inherit-stat: bool,
+        inherit-thread: bool,
+
+        //#[cfg(feature = "linux-5.4")]
+        //pub aux_output: bool,
+        build-id: bool,
+
+        enable-on-exec: bool,
+        remove-on-exec: bool,
+
+        include-callchain-kernel: bool,
+        include-callchain-user: bool,
+
+        clockid: option<clock-id>,
+        precise-ip: sample-ip-skid,
+        wakeup: wakeup,
+        /// Wrap `sig_data` with `Some` to enable sigtrap
+        sigtrap: option<u64>,
+
+        sample-record-fields: sample-record-fields,
+
+        extra-record-types: list<extra-record>,
+        /// i.e. `sample_id_all`
+        extra-record-with-sample-id: bool,
     }
 
     variant process {

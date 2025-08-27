@@ -1,6 +1,7 @@
 package profiling:perf@0.0.0;
 
 world imports {
+    import sampler;
     import config;
     import counter;
     import counter-group;
